@@ -1,118 +1,21 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type Patient = {
-  id: string;
-  display_name: string;
-  date_of_birth: string | null;
-  age: number | null;
-  sex: string | null;
-  patient_identifier: string | null;
-  created_at: string;
-};
+export type Patient = { id:string; display_name:string; date_of_birth:string|null; age:number|null; sex:string|null; patient_identifier:string|null; created_at:string };
+export type Observation = { id:string; test_name:string; value:string|null; unit:string|null; range_lower:number|null; range_upper:number|null; range_original_text:string|null; status:string; verification_status:string; report_date:string|null; source_text:string|null };
+export type MedicalDocument = { id:string; file_name:string; mime_type:string|null; file_size:number|null; report_date:string|null; document_type:string|null; processing_status:string; processing_error:string|null; storage_path:string|null; uploaded_at:string };
 
-export type Observation = {
-  id: string;
-  test_name: string;
-  value: string | null;
-  unit: string | null;
-  range_lower: number | null;
-  range_upper: number | null;
-  range_original_text: string | null;
-  status: string;
-  verification_status: string;
-  report_date: string | null;
-  source_text: string | null;
-};
-
-export async function getSession() {
-  const { data, error } = await supabase.auth.getSession();
-  if (error) throw error;
-  return data.session;
-}
-
-export async function signIn(email: string, password: string) {
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-}
-
-export async function signUp(email: string, password: string, displayName: string) {
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { display_name: displayName } },
-  });
-  if (error) throw error;
-}
-
-export async function signOut() {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
-}
-
-export async function listPatients() {
-  const { data, error } = await supabase
-    .from("patients")
-    .select("id,display_name,date_of_birth,age,sex,patient_identifier,created_at")
-    .eq("is_demo", false)
-    .order("updated_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as Patient[];
-}
-
-export async function createPatient(input: {
-  display_name: string;
-  date_of_birth?: string;
-  age?: number;
-  sex?: string;
-  patient_identifier?: string;
-}) {
-  const session = await getSession();
-  if (!session?.user) throw new Error("Please sign in before creating a patient.");
-  const { data, error } = await supabase
-    .from("patients")
-    .insert({ ...input, owner_id: session.user.id })
-    .select("id,display_name,date_of_birth,age,sex,patient_identifier,created_at")
-    .single();
-  if (error) throw error;
-  return data as Patient;
-}
-
-export async function getPatient(patientId: string) {
-  const { data, error } = await supabase
-    .from("patients")
-    .select("id,display_name,date_of_birth,age,sex,patient_identifier,created_at")
-    .eq("id", patientId)
-    .single();
-  if (error) throw error;
-  return data as Patient;
-}
-
-export async function listObservations(patientId: string) {
-  const { data, error } = await supabase
-    .from("observations")
-    .select("id,test_name,value,unit,range_lower,range_upper,range_original_text,status,verification_status,report_date,source_text")
-    .eq("patient_id", patientId)
-    .order("report_date", { ascending: false, nullsFirst: false });
-  if (error) throw error;
-  return (data ?? []) as Observation[];
-}
-
-export async function addPatientInformation(patientId: string, category: string, label: string, value: string) {
-  const { data, error } = await supabase
-    .from("patient_information")
-    .insert({ patient_id: patientId, category, label, value, source_type: "USER_PROVIDED", verification_status: "HUMAN_VERIFIED" })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-}
-
-export function observationStatus(observation: Observation) {
-  if (observation.status !== "UNDETERMINED") return observation.status;
-  if (observation.range_lower == null || observation.range_upper == null || observation.value == null) return "UNDETERMINED";
-  const numeric = Number.parseFloat(observation.value.replace(",", ""));
-  if (!Number.isFinite(numeric)) return "UNDETERMINED";
-  if (numeric < observation.range_lower) return "LOW";
-  if (numeric > observation.range_upper) return "HIGH";
-  return "NORMAL";
-}
+export async function getSession(){const {data,error}=await supabase.auth.getSession();if(error)throw error;return data.session;}
+export async function signIn(email:string,password:string){const {error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;}
+export async function signUp(email:string,password:string,displayName:string){const {error}=await supabase.auth.signUp({email,password,options:{data:{display_name:displayName}}});if(error)throw error;}
+export async function signOut(){const {error}=await supabase.auth.signOut();if(error)throw error;}
+export async function listPatients(){const {data,error}=await supabase.from("patients").select("id,display_name,date_of_birth,age,sex,patient_identifier,created_at").eq("is_demo",false).order("updated_at",{ascending:false});if(error)throw error;return (data??[]) as Patient[];}
+export async function createPatient(input:{display_name:string;date_of_birth?:string;age?:number;sex?:string;patient_identifier?:string}){const session=await getSession();if(!session?.user)throw new Error("Please sign in before creating a patient.");const {data,error}=await supabase.from("patients").insert({...input,owner_id:session.user.id}).select("id,display_name,date_of_birth,age,sex,patient_identifier,created_at").single();if(error)throw error;return data as Patient;}
+export async function getPatient(patientId:string){const {data,error}=await supabase.from("patients").select("id,display_name,date_of_birth,age,sex,patient_identifier,created_at").eq("id",patientId).single();if(error)throw error;return data as Patient;}
+export async function listObservations(patientId:string){const {data,error}=await supabase.from("observations").select("id,test_name,value,unit,range_lower,range_upper,range_original_text,status,verification_status,report_date,source_text").eq("patient_id",patientId).order("report_date",{ascending:false,nullsFirst:false});if(error)throw error;return (data??[]) as Observation[];}
+export async function listDocuments(patientId:string){const {data,error}=await supabase.from("medical_documents").select("id,file_name,mime_type,file_size,report_date,document_type,processing_status,processing_error,storage_path,uploaded_at").eq("patient_id",patientId).order("uploaded_at",{ascending:false});if(error)throw error;return (data??[]) as MedicalDocument[];}
+export async function uploadDocument(patientId:string,file:File,reportDate?:string){const session=await getSession();if(!session?.user)throw new Error("Please sign in first.");const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");const path=`${session.user.id}/${patientId}/${crypto.randomUUID()}-${safe}`;const {error:uploadError}=await supabase.storage.from("patient-documents").upload(path,file,{contentType:file.type||"application/octet-stream",upsert:false});if(uploadError)throw uploadError;const {data,error}=await supabase.from("medical_documents").insert({patient_id:patientId,file_name:file.name,storage_path:path,mime_type:file.type||null,file_size:file.size,report_date:reportDate||null,processing_status:"PENDING"}).select().single();if(error){await supabase.storage.from("patient-documents").remove([path]);throw error;}return data as MedicalDocument;}
+export async function processDocument(documentId:string){const {data,error}=await supabase.functions.invoke("process-document",{body:{document_id:documentId}});if(error)throw error;return data;}
+export async function generateSummary(patientId:string){const {data,error}=await supabase.functions.invoke("generate-summary",{body:{patient_id:patientId}});if(error)throw error;return data;}
+export async function addPatientInformation(patientId:string,category:string,label:string,value:string){const {data,error}=await supabase.from("patient_information").insert({patient_id:patientId,category,label,value,source_type:"USER_PROVIDED",verification_status:"HUMAN_VERIFIED"}).select().single();if(error)throw error;return data;}
+export async function updateObservationVerification(id:string,patientId:string,verificationStatus:"HUMAN_VERIFIED"|"REJECTED"|"NEEDS_REVIEW",reviewNote?:string){const {data:before}=await supabase.from("observations").select("verification_status").eq("id",id).eq("patient_id",patientId).single();const {data,error}=await supabase.from("observations").update({verification_status:verificationStatus,review_note:reviewNote||null}).eq("id",id).eq("patient_id",patientId).select().single();if(error)throw error;await supabase.from("audit_events").insert({patient_id:patientId,actor:"HUMAN",action:"OBSERVATION_REVIEWED",entity_type:"observations",entity_id:id,previous_value:before?{verification_status:before.verification_status}:null,new_value:{verification_status:verificationStatus,review_note:reviewNote||null}});return data as Observation;}
+export function observationStatus(o:Observation){if(o.status!=="UNDETERMINED")return o.status;if(o.range_lower==null||o.range_upper==null||o.value==null)return"UNDETERMINED";const n=Number.parseFloat(o.value.replace(",",""));if(!Number.isFinite(n))return"UNDETERMINED";return n<o.range_lower?"LOW":n>o.range_upper?"HIGH":"NORMAL";}
